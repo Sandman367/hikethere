@@ -341,7 +341,7 @@ $("mine").onclick=e=>{const b=e.target.closest("button[data-a]");if(!b)return;co
 
 /* ---------- open shared links ---------- */
 function fromHash(){const h=location.hash.slice(1);if(!h)return;const q=new URLSearchParams(h);
-  if(q.get("trail")){const tt=TRAILS.find(x=>x.id===q.get("trail")),ri=+q.get("r");if(tt&&tt.opts[ri])tt.sel=ri;history.replaceState(null,"",location.pathname);setTimeout(()=>openTrail(q.get("trail")),300);return;}
+  if(q.get("trail")){const tt=TRAILS.find(x=>x.id===q.get("trail")),ri=q.has("r")?+q.get("r"):-1;if(tt&&tt.opts[ri])tt.sel=ri;history.replaceState(null,"",location.pathname);setTimeout(()=>openTrail(q.get("trail")),300);return;}
   if(q.get("u")){let pts;try{pts=decC(q.get("u"));}catch(e){return;}if(pts.length<2)return;const name=(q.get("n")||"Shared hike").slice(0,60);
     if(!S.hikes.some(x=>x.name===name&&dist(x.pts[0],pts[0])<5))S.hikes.push({id:Date.now(),name,t:Date.now(),pts,shared:true});save();history.replaceState(null,"",location.pathname);tab("mine");setTimeout(()=>map.fitBounds(L.latLngBounds(pts),{padding:[40,40]}),400);}}
 fromHash();window.addEventListener("hashchange",fromHash);recUI();if(S.rec)startGps();
