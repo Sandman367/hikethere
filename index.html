@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#16241c">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<title>Upstate Trails</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0f1913;--panel:#16241c;--panel2:#1f3227;--line:#2f4a3a;--fg:#eef4ef;--muted:#a3b9aa;--acc:#ff8a3d;--go:#4cd17a;--warn:#ffd166;--bad:#ff5a5a;--display:"Barlow Condensed",system-ui,sans-serif;--body:"Barlow",system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:16px/1.4 var(--body);-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+#map{position:absolute;inset:0}
+.top{position:absolute;z-index:1000;left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));top:calc(env(safe-area-inset-top) + 10px);display:flex;gap:8px;align-items:center;pointer-events:none}
+.brand{pointer-events:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:7px 12px;font:700 20px var(--display);letter-spacing:.03em}
+.brand b{color:var(--acc)}
+.pill{pointer-events:auto;margin-left:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 10px;font:600 13px var(--body);color:var(--muted);max-width:52vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill.rec{color:#fff;background:var(--bad);border-color:var(--bad)}
+.fabs{position:absolute;z-index:1000;right:max(10px,env(safe-area-inset-right));top:calc(env(safe-area-inset-top) + 64px);display:flex;flex-direction:column;gap:8px}
+.fab{width:46px;height:46px;border-radius:12px;border:1px solid var(--line);background:rgba(22,36,28,.94);color:var(--fg);font:700 12px var(--display);letter-spacing:.04em;cursor:pointer;display:grid;place-items:center}
+.fab.on{background:var(--acc);border-color:var(--acc);color:#111}
+.fab svg{width:22px;height:22px}
+.sheet{position:absolute;z-index:1001;left:0;right:0;bottom:0;max-height:62vh;background:var(--panel);border-top:1px solid var(--line);border-radius:18px 18px 0 0;display:flex;flex-direction:column;transition:max-height .25s;padding-bottom:env(safe-area-inset-bottom)}
+.sheet.min{max-height:118px}
+.grab{border:0;background:none;padding:6px 0 2px;cursor:pointer;display:flex;justify-content:center;width:100%}.gpill{display:inline-flex;align-items:center;gap:6px;background:var(--panel2,#22342a);border:1px solid var(--line);border-radius:999px;padding:5px 14px 5px 10px;color:var(--fg);font:700 14px system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase}.gpill svg{width:18px;height:18px}.gchev{transition:transform .2s}.sheet.min .gchev{transform:rotate(180deg)}.sheet .g-show{display:none}.sheet.min .g-show{display:inline}.sheet.min .g-hide{display:none}
+.tabs{display:flex;gap:4px;padding:4px 10px}
+.tab{flex:1;border:0;background:none;color:var(--muted);font:700 15px var(--display);letter-spacing:.06em;text-transform:uppercase;padding:8px 0;border-radius:10px;cursor:pointer}
+.tab.on{background:var(--panel2);color:var(--fg)}
+.pane{overflow:auto;padding:6px 12px 14px;flex:1}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px}
+.chip{flex:none;border:1px solid var(--line);background:none;color:var(--fg);border-radius:999px;padding:6px 12px;font:600 13px var(--body);cursor:pointer}
+.chip.on{background:var(--fg);color:#111;border-color:var(--fg)}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;cursor:pointer}
+.card h3{margin:0;font:700 20px var(--display);letter-spacing:.02em}
+.sub{color:var(--muted);font-size:13px}
+.stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;font:600 14px var(--body)}
+.badge{display:inline-block;border-radius:6px;padding:1px 7px;font:700 12px var(--body);margin-right:4px;vertical-align:middle}
+.b-open{background:#1f5a35;color:#bff5cf}.b-closed{background:#6b1f1f;color:#ffd0d0}.b-seasonal{background:#6b5a1f;color:#fff0bf}
+.d-Easy{color:#7ee59e}.d-Moderate{color:#ffd166}.d-Hard{color:#ff8a6b}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);border-radius:12px;padding:11px 14px;font:600 15px var(--body);cursor:pointer;text-decoration:none}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#111}.btn.go{background:var(--go);border-color:var(--go);color:#0b2414}.btn.stop{background:var(--bad);border-color:var(--bad);color:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap}.grow{flex:1}
+.det h2{margin:4px 0 2px;font:700 26px var(--display)}
+.det h4{margin:14px 0 4px;font:700 15px var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.det p{margin:4px 0}
+.alert{border-radius:12px;padding:10px 12px;margin:8px 0;font-weight:600}
+.alert.bad{background:#3a1717;border:1px solid #6b1f1f}.alert.warn{background:#3a3217;border:1px solid #6b5a1f}
+.big{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0}
+.big div{background:var(--panel2);border-radius:10px;padding:8px 4px;text-align:center}.big b{display:block;font:700 20px var(--display)}.big span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.src a{color:var(--muted);font-size:13px}
+.prof{width:100%;height:70px;display:block;margin-top:6px}
+.lbl{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px;font:700 12px var(--body);padding:1px 6px;box-shadow:none;white-space:nowrap}
+.lbl::before{display:none}
+.pin{width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+.me{width:18px;height:18px;border-radius:50%;background:#2f8cff;border:3px solid #fff;box-shadow:0 0 0 7px rgba(47,140,255,.25)}
+textarea,input[type=text]{width:100%;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px;font:15px var(--body)}
+.note{border-top:1px solid var(--line);padding:6px 0;font-size:14px}.note .sub{font-size:12px}
+.compass{position:relative;width:46px;height:46px;border-radius:12px;border:1px solid var(--line);background:rgba(22,36,28,.94);cursor:pointer}
+.compass svg{width:46px;height:46px}
+#fsGate{position:fixed;inset:0;z-index:3000;background:rgba(8,14,11,.6);display:flex;align-items:center;justify-content:center;padding:24px}
+.fsbox{display:flex;flex-direction:column;gap:12px;width:100%;max-width:340px;text-align:center}
+.fsbox h1{font:700 34px var(--display);margin:0}.fsbox h1 b{color:var(--acc)}
+.fsbox button{border:0;border-radius:14px;padding:16px;font:700 18px var(--display);letter-spacing:.03em;cursor:pointer;background:var(--panel2);color:var(--fg)}
+#fsGo{background:var(--acc);color:#111;padding:20px;font-size:22px}#fsNo{background:none;color:var(--muted);padding:8px}
+.demo{font-size:12px;color:var(--muted);text-align:center;padding:8px 0}
+</style></head><body>
+<div id="map"></div>
+<div class="top"><div class="brand">Upstate <b>Trails</b></div><div class="pill" id="pill">GPS off</div></div>
+<div class="fabs">
+  <button class="fab" id="bLoc" title="My location"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
+  <button class="fab" id="bLay" title="Switch map">TOPO</button>
+  <button class="fab" id="bFull" title="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9V3h6M21 9V3h-6M3 15v6h6M21 15v6h-6"/></svg></button>
+  <div class="compass" id="compass" title="Tap to put north up"><svg viewBox="0 0 46 46"><g transform="translate(23,23)"><g id="cRot"><path d="M0,-17 L5,2 L0,-1 L-5,2Z" fill="#ff8a3d"/><path d="M0,15 L4,2 L0,3 L-4,2Z" fill="#a3b9aa"/><text y="-8" x="0" fill="#fff" font-size="0" text-anchor="middle">N</text></g></g></svg></div>
+</div>
+<section class="sheet" id="sheet">
+  <button class="grab" id="grab" aria-label="Show or hide panel"><span class="gpill"><svg class="gham" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg><span class="g-hide">Hide</span><span class="g-show">Show</span></span></button>
+  <nav class="tabs"><button class="tab on" data-t="explore">Explore</button><button class="tab" data-t="record">Record</button><button class="tab" data-t="mine">My hikes</button></nav>
+  <div class="pane" id="p-explore">
+    <div class="chips" id="chips"></div>
+    <div id="list"></div>
+    <div class="demo">Demo · 10 trails · facts checked <span class="chk"></span> · not a substitute for official park info</div>
+  </div>
+  <div class="pane" id="p-detail" hidden></div>
+  <div class="pane" id="p-record" hidden>
+    <p class="sub">Record any hike with your phone's GPS. You get the distance, elevation gain and a profile, and can share it as a link or a GPX file.</p>
+    <div class="card" style="cursor:default"><div class="row" style="align-items:center"><div class="grow"><div style="font:700 30px var(--display)" id="rDist">0.00 mi</div><div class="sub" id="rInfo">Not recording</div></div><button class="btn go" id="bRec">● Start</button></div>
+    <div class="row" style="margin-top:8px" id="rCtl" hidden><button class="btn grow" id="bPause">Pause</button><button class="btn stop grow" id="bStop">Finish</button></div></div>
+    <p class="sub">Keep the screen on while recording: phones pause GPS when the screen goes off.</p>
+  </div>
+  <div class="pane" id="p-mine" hidden><div id="mine"></div></div>
+</section>
+<div id="fsGate" hidden><div class="fsbox"><h1>Upstate <b>Trails</b></h1><div class="sub">Day hikes from the city: how to get there, parking, difficulty, and your own tracks.</div><button id="fsGo">Tap to start (full screen)</button><button id="fsInst" hidden>Install the app</button><button id="fsNo">Not now</button></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet-rotate@0.2.8/dist/leaflet-rotate.js"></script>
+<script>
+const CHECKED="Nov 12, 2026";
+const TRAILS=[
+{id:"bull",name:"Bull Hill (Mount Taurus) Full Loop",area:"Hudson Highlands · Cold Spring",region:"hudson",lat:41.42659,lng:-73.96534,approx:true,
+ type:"Loop",mi:5.5,gain:null,gainNote:"not published by the park",high:1276,time:"3–4 hr",diff:"Hard",train:true,
+ status:"open",statusText:"Open",
+ desc:"Steep, steady climb past old quarry ruins (rusted cables and pipes) to big Hudson views on the way up. The summit itself is wooded.",
+ transit:"Metro-North Hudson Line to Cold Spring, then walk Main St / Fair St to Route 9D, about 0.7–1 mi. Use the MTA TrainTime app for weekend times.",
+ parking:"Washburn lot on Route 9D, size not published; very busy on weekends. No fee. Illegally parked cars are ticketed or towed.",
+ tips:["Take the train: the lot fills early","Ticks; the descent is slick when wet or icy","Breakneck Ridge next door is closed until 2027: this is the best alternative"],
+ sources:[["NY State Parks hiking suggestions (PDF)","https://parks.ny.gov/documents/parks/HudsonHighlandsHudsonHighlandsHikingSuggestions.pdf"],["NY-NJ Trail Conference hike page","https://nynjtc.org/hike/print/115"]]},
+{id:"nose",name:"Anthony's Nose",area:"Hudson Highlands · Bear Mountain Bridge",region:"hudson",lat:41.32033,lng:-73.97879,approx:true,
+ type:"Out and back",mi:2.4,gain:700,high:927,time:"1.5–2 hr",diff:"Moderate",train:true,
+ status:"open",statusText:"Open",
+ desc:"Short, steep and rocky first half-mile on the Appalachian Trail, then easy walking to one of the best views of the Bear Mountain Bridge and the Hudson.",
+ transit:"Manitou station (Metro-North Hudson Line) has only a few weekend stops; check times before you go. Peekskill station is about 5 mi away (taxi).",
+ parking:"Parallel spots on Route 9D plus one pull-off near the Appalachian Trail kiosk. Fills on weekends (arrive by 9 am). No fee.",
+ tips:["Short walk on the 9D shoulder with fast traffic","Microspikes in winter; rock is slick when wet"],
+ sources:[["NY State Parks hiking suggestions (PDF)","https://parks.ny.gov/documents/parks/HudsonHighlandsHudsonHighlandsHikingSuggestions.pdf"],["Hike the Hudson Valley (blog)","https://hikethehudsonvalley.com/hikes/anthonys-nose/"]]},
+{id:"beacon",name:"Mount Beacon to the Fire Tower",area:"Beacon",region:"hudson",lat:41.49289,lng:-73.95845,
+ type:"Out and back",mi:5.0,gain:null,gainNote:"first mile alone climbs about 1,000 ft",high:1610,time:"3–4 hr",diff:"Hard",train:true,
+ status:"open",statusText:"Open",
+ desc:"Stairs and rock straight up past the old incline railway and casino ruins, then on to the South Beacon fire tower with views to NYC on clear days.",
+ transit:"Metro-North to Beacon, then walk about 1.5 mi via Beekman St, Wolcott Ave (Route 9D) and Howland Ave. Some 2026 weekends had track work; check the MTA app.",
+ parking:"Mount Beacon Park lot, 788 Wolcott Ave: 77 spaces, fills on weekends. Free, dawn to dusk. Street parking in Beacon is allowed.",
+ tips:["Stay on the red blazes","Do not go near or swim in Beacon Reservoir"],
+ sources:[["Scenic Hudson – Mount Beacon Park","https://www.scenichudson.org/mountbeacon"],["NY-NJ Trail Conference hike page","https://secure.nynjtc.org/hike/print/87"]]},
+{id:"breakneck",name:"Breakneck Ridge",area:"Hudson Highlands · Cold Spring",region:"hudson",lat:41.44328,lng:-73.97801,approx:true,
+ type:"Loop",mi:3.25,gain:null,gainNote:"about 1,250 ft (blog, unverified)",high:null,time:"3 hr",diff:"Hard",train:true,
+ status:"closed",statusText:"Closed until 2027",
+ desc:"The famous rock scramble above the Hudson. Closed since April 21, 2025 for Fjord Trail construction, including the Breakneck Ridge train stop.",
+ transit:"The Breakneck Ridge Metro-North stop is closed. The trail is closed too.",
+ parking:"No parking on Route 9D north of the tunnel.",
+ tips:["Reopening is expected mid-to-late 2027","Go to Bull Hill instead: same trains, same views"],
+ sources:[["NY-NJ Trail Conference (Apr 2, 2026)","https://www.nynjtc.org/?p=10581"],["Hudson Highlands Fjord Trail construction tracker","https://hhft.org/construction-tracker/"],["breakneck.info","https://breakneck.info"]]},
+{id:"trapps",name:"Undercliff / Overcliff Loop",area:"Mohonk Preserve · New Paltz",region:"gunks",lat:41.73677,lng:-74.19865,approx:true,
+ type:"Loop",mi:5.0,gain:200,high:null,time:"2–2.5 hr",diff:"Easy",train:false,bus:true,
+ status:"open",statusText:"Open",
+ desc:"Wide, flat carriage roads under and over the white Shawangunk cliffs, with rock climbers overhead. A great first Gunks hike.",
+ transit:"Trailways bus from Port Authority to New Paltz, then a taxi about 7 mi. The free Ulster County Nature Bus runs Saturdays in summer only (June–September).",
+ parking:"West Trapps lot, 3700 Route 55, Gardiner. Fills very early on peak weekends; overflow at the Visitor Center lot. Day pass per person: hikers $15 Mon–Thu, $20 Fri–Sun and holidays.",
+ tips:["Arrive before 9 am on weekends","Dogs on a 6 ft leash; open sunrise to sunset"],
+ sources:[["Mohonk Preserve – Plan your visit","https://www.mohonkpreserve.org/plan-your-visit/"],["Mohonk Preserve – Alerts (Nov 9, 2026)","https://www.mohonkpreserve.org/visit/alerts/"]]},
+{id:"minnelake",name:"Lake Minnewaska Loop",area:"Minnewaska State Park · Kerhonkson",region:"gunks",lat:41.73520,lng:-74.23898,
+ type:"Loop",mi:2.0,gain:null,gainNote:"small",high:null,time:"1 hr",diff:"Easy",train:false,bus:true,
+ status:"open",statusText:"Open · winter hours 9–5",
+ desc:"Gravel carriage road around a clear blue cliff-top lake. Easy walking with big views; the cliff edges are unfenced.",
+ transit:"No practical transit in the off-season. The Nature Bus (Saturdays, June–September) comes from New Paltz and Ellenville.",
+ parking:"Upper and lower lots at 5281 Route 44-55. $10 per vehicle (Empire Pass accepted). The gate closes when the lots are full; no shoulder parking.",
+ tips:["On fall weekends arrive at the 9 am opening","Swimming closed until the 2027 season"],
+ sources:[["NY State Parks – Minnewaska","https://parks.ny.gov/parks/minnewaska/"],["Minnewaska trail map (PDF)","https://parks.ny.gov/documents/parks/MinnewaskaMinnewaskaStateParkPreserveTrailMap.pdf"]]},
+{id:"gertrude",name:"Gertrude's Nose Loop",area:"Minnewaska State Park · Kerhonkson",region:"gunks",lat:41.73520,lng:-74.23898,
+ type:"Loop",mi:7.0,gain:1147,high:1812,time:"5–6 hr",diff:"Hard",train:false,bus:true,
+ status:"open",statusText:"Open · park closes 5 pm",
+ desc:"Cliff-edge walking on open rock with huge views of the Wallkill Valley. Blazes are painted on the rock. Not for anyone afraid of heights.",
+ transit:"Same as Lake Minnewaska: no practical transit outside the summer Nature Bus.",
+ parking:"Same lot as Lake Minnewaska: $10 per vehicle; lots close when full.",
+ tips:["Start early: 5–6 hours and the park closes at 5 pm in winter","Wet rock and a steep drop and climb on the Millbrook footpath"],
+ sources:[["Minnewaska trail map (PDF)","https://parks.ny.gov/documents/parks/MinnewaskaMinnewaskaStateParkPreserveTrailMap.pdf"],["Scenes from the Trail (blog)","https://scenesfromthetrail.com/2019/10/19/gertrudes-nose-loop-minnewaska-state-park-preserve/"]]},
+{id:"verk",name:"Verkeerderkill Falls",area:"Sam's Point · Cragsmoor (Ellenville)",region:"ellenville",lat:41.66930,lng:-74.36212,
+ type:"Out and back",mi:5.5,gain:null,gainNote:"about 500 ft over the falls stretch",high:2240,time:"3–3.5 hr",diff:"Moderate",train:false,
+ status:"open",statusText:"Open",resv:true,
+ desc:"Across the rare dwarf pine barrens on the Shawangunk Ridge to a 180-ft waterfall. Open, sunny and rocky.",
+ transit:"No practical transit.",
+ parking:"400 Sam's Point Road, Cragsmoor. $10 per vehicle (Empire Pass accepted). Weekend and holiday reservations required April 18 – November 15, 2026, up to 2 weeks ahead (ReserveAmerica). No drop-offs or pickups.",
+ tips:["Do not go near the top of the falls","Little shade; exposed in thunderstorms"],
+ sources:[["NY State Parks – Sam's Point Area","https://parks.ny.gov/visit/state-parks/minnewaska-state-park-preserve-sams-point-area"],["Sam's Point trail map (PDF)","https://parks.ny.gov/documents/parks/MinnewaskaSamsPointAreaTrailMap.pdf"]]},
+{id:"icecaves",name:"Ice Caves & Lenape Steps",area:"Sam's Point · Cragsmoor (Ellenville)",region:"ellenville",lat:41.66930,lng:-74.36212,
+ type:"Loop",mi:3.4,gain:603,high:2251,time:"2 hr",diff:"Moderate",train:false,
+ status:"seasonal",statusText:"Seasonal: caves usually closed in winter",resv:true,
+ desc:"Through narrow rock crevices with ladders and snow that lasts into summer, then up the stone Lenape Steps to the Sam's Point overlook.",
+ transit:"No practical transit.",
+ parking:"Same lot as Verkeerderkill Falls; reservations on weekends and holidays through Nov 15, 2026.",
+ tips:["Call 845-647-7989 to check if the Ice Caves trail is open","Grippy shoes and a flashlight; cold inside even in July"],
+ sources:[["Sam's Point trail map (PDF)","https://parks.ny.gov/documents/parks/MinnewaskaSamsPointAreaTrailMap.pdf"],["Scenes from the Trail (Jun 2026)","https://scenesfromthetrail.com/2026/06/27/lenape-steps-ice-caves-sams-point-area/"]]},
+{id:"kaat",name:"Kaaterskill Falls (upper platform)",area:"Catskills · Haines Falls",region:"catskills",lat:42.19575,lng:-74.06343,approx:true,
+ type:"Out and back",mi:0.6,gain:null,gainNote:"little",high:2081,time:"30–45 min",diff:"Easy",train:false,bus:true,
+ status:"open",statusText:"Open · lower trailhead closed",
+ desc:"A firm, wheelchair-accessible path to a viewing platform over New York's tallest two-tier waterfall. A steeper path continues toward the base.",
+ transit:"Trailways from NYC to Haines Falls (Route 23A at O'Hara Rd), about 2 trips a day, about 3 hr 10 min.",
+ parking:"Laurel House Road lot off North Lake Road; fills early in summer. Backup: Schutt Road. No fee. No parking on Route 23A (the lower Molly Smith lot is closed; cars are towed).",
+ tips:["Stay behind the barriers: there have been deaths here","Icy November–April"],
+ sources:[["NYS DEC – Kaaterskill Wild Forest","https://dec.ny.gov/places/kaaterskill-wild-forest"],["DEC press release (May 21, 2026)","https://dec.ny.gov/news/press-releases/2026/5/dec-announces-suite-of-actions-to-protect-public-safety-and-promote-sustainable-use-of-state-lands"]]}
+];
+const $=id=>document.getElementById(id),FT=3.28084,MI=1609.344,KEY="upstatetrails.v1";
+const esc=s=>String(s).replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
+let S={hikes:[],notes:{},rec:null};try{Object.assign(S,JSON.parse(localStorage.getItem(KEY)||"{}"));}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}};
+function dist(a,b){const R=6371000,t=Math.PI/180,dl=(b[0]-a[0])*t,dg=(b[1]-a[1])*t,x=Math.sin(dl/2)**2+Math.cos(a[0]*t)*Math.cos(b[0]*t)*Math.sin(dg/2)**2;return 2*R*Math.asin(Math.sqrt(x));}
+const lineLen=p=>{let s=0;for(let i=1;i<p.length;i++)s+=dist(p[i-1],p[i]);return s;};
+const fmi=m=>(m/MI).toFixed(m<MI*10?2:1)+" mi",fft=m=>Math.round(m*FT).toLocaleString()+" ft";
+document.querySelectorAll(".chk").forEach(e=>e.textContent=CHECKED);
+
+/* ---------- map ---------- */
+const map=L.map("map",{zoomControl:false,doubleClickZoom:false,maxZoom:19,rotate:true,touchRotate:true,rotateControl:false,bearing:0}).setView([41.62,-74.1],9);
+const sat=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Imagery © Esri"});
+const topo=L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",{maxZoom:19,maxNativeZoom:17,attribution:"© OpenTopoMap, © OpenStreetMap contributors"}).addTo(map);
+const marked=L.tileLayer("https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png",{maxZoom:19,maxNativeZoom:18,opacity:.85,attribution:"Trails © waymarkedtrails.org"}).addTo(map);
+$("bLay").onclick=()=>{if(map.hasLayer(topo)){map.removeLayer(topo);sat.addTo(map);$("bLay").textContent="SAT";}else{map.removeLayer(sat);topo.addTo(map);$("bLay").textContent="TOPO";}marked.bringToFront();};
+const COL={open:"#4cd17a",closed:"#ff5a5a",seasonal:"#ffd166"};
+const seen={};TRAILS.forEach(t=>{const k=t.lat+","+t.lng;const n=seen[k]=(seen[k]||0)+1;t.plat=t.lat+(n-1)*0.0012;t.plng=t.lng+(n-1)*0.0016;
+  t.m=L.marker([t.plat,t.plng],{icon:L.divIcon({className:"",html:'<div class="pin" style="background:'+COL[t.status]+'"></div>',iconSize:[30,30],iconAnchor:[15,30]})}).addTo(map)
+   .bindTooltip(t.name,{direction:"top",offset:[0,-30],className:"lbl"}).on("click",()=>openTrail(t.id));});
+const allB=L.latLngBounds(TRAILS.map(t=>[t.lat,t.lng]));setTimeout(()=>map.fitBounds(allB,{padding:[30,30]}),50);
+
+/* ---------- compass (map turns with two fingers) ---------- */
+function upd(){const c=map.getSize().divideBy(2),ll=map.containerPointToLatLng(c),a=map.latLngToContainerPoint(ll),b=map.latLngToContainerPoint([ll.lat+0.01,ll.lng]);$("cRot").setAttribute("transform","rotate("+(Math.atan2(b.x-a.x,a.y-b.y)*180/Math.PI).toFixed(1)+")");}
+map.on("rotate move zoomend",upd);$("compass").onclick=()=>{if(map.setBearing)map.setBearing(0);upd();};
+
+/* ---------- elevation (free terrain tiles), double-tap anywhere ---------- */
+const EZ=13,etiles={};
+function etile(x,y){const k=x+"/"+y;if(!etiles[k])etiles[k]=new Promise(res=>{const i=new Image();i.crossOrigin="anonymous";i.onload=()=>{const c=document.createElement("canvas");c.width=c.height=256;const g=c.getContext("2d");g.drawImage(i,0,0);res(g.getImageData(0,0,256,256).data);};i.onerror=()=>{delete etiles[k];res(null);};i.src="https://s3.amazonaws.com/elevation-tiles-prod/terrarium/"+EZ+"/"+x+"/"+y+".png";});return etiles[k];}
+async function elevAt(lat,lng){const n=2**EZ,X=(lng+180)/360*n,s=Math.sin(lat*Math.PI/180),Y=(.5-Math.log((1+s)/(1-s))/(4*Math.PI))*n;const tx=Math.floor(X),ty=Math.floor(Y),px=Math.min(255,Math.floor((X-tx)*256)),py=Math.min(255,Math.floor((Y-ty)*256));
+  const d=await etile(tx,ty);if(!d)return null;const i=(py*256+px)*4;return d[i]*256+d[i+1]+d[i+2]/256-32768;}
+map.on("dblclick",async e=>{const v=await elevAt(e.latlng.lat,e.latlng.lng);if(v==null)return;L.popup({closeButton:false}).setLatLng(e.latlng).setContent("Ground elevation "+fft(v)).openOn(map);});
+
+/* ---------- sheet & tabs ---------- */
+function tab(k){document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.t===k));["explore","detail","record","mine"].forEach(p=>$("p-"+p).hidden=p!==k);$("sheet").classList.remove("min");if(k==="mine")mine();}
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>tab(b.dataset.t));$("grab").onclick=()=>$("sheet").classList.toggle("min");
+
+/* ---------- explore list ---------- */
+const FILTERS=[["all","All"],["train","By train"],["easy","Easy"],["ellenville","Near Ellenville"],["open","Open now"]];let filt="all";
+$("chips").innerHTML=FILTERS.map(([k,l])=>'<button class="chip'+(k===filt?" on":"")+'" data-f="'+k+'">'+l+'</button>').join("");
+$("chips").onclick=e=>{const b=e.target.closest(".chip");if(!b)return;filt=b.dataset.f;document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",c===b));list();};
+const resvNow=()=>new Date()<=new Date("2026-11-15T23:59:59-05:00");
+function badge(t){return '<span class="badge b-'+t.status+'">'+esc(t.statusText)+'</span>';}
+function gainTxt(t){return t.gain?t.gain.toLocaleString()+" ft":"—";}
+function list(){const L2=TRAILS.filter(t=>filt==="all"||(filt==="train"&&t.train)||(filt==="easy"&&t.diff==="Easy")||(filt==="ellenville"&&t.region==="ellenville")||(filt==="open"&&t.status==="open"))
+  .sort((a,b)=>(a.status==="closed")-(b.status==="closed"));
+  $("list").innerHTML=L2.map(t=>'<div class="card" data-id="'+t.id+'"><h3>'+esc(t.name)+'</h3><div class="sub">'+esc(t.area)+'</div><div class="stats">'+badge(t)+'<span>'+t.mi+' mi</span><span>↑ '+gainTxt(t)+'</span><span class="d-'+t.diff+'">'+t.diff+'</span>'+(t.train?'<span>🚆 train</span>':t.bus?'<span>🚌 bus + taxi</span>':'<span>🚗 car</span>')+'</div></div>').join("")||'<p class="sub">No trails match.</p>';}
+$("list").onclick=e=>{const c=e.target.closest(".card");if(c)openTrail(c.dataset.id);};list();
+
+/* ---------- trail detail ---------- */
+async function openTrail(id){const t=TRAILS.find(x=>x.id===id);if(!t)return;tab("detail");document.querySelectorAll(".tab").forEach(b=>b.classList.remove("on"));
+  map.setView([t.lat,t.lng],15);
+  const notes=(S.notes[id]||[]).slice().reverse();
+  let alerts="";if(t.status==="closed")alerts+='<div class="alert bad">⛔ '+esc(t.statusText)+'. '+esc(t.desc.split(". ").slice(1).join(". "))+'</div>';
+  if(t.status==="seasonal")alerts+='<div class="alert warn">⚠ '+esc(t.statusText)+'</div>';
+  if(t.resv)alerts+=resvNow()?'<div class="alert warn">🅿 Weekend & holiday parking reservation required until Nov 15, 2026 (ReserveAmerica, up to 2 weeks ahead). No drop-offs.</div>':'<div class="alert warn">🅿 The 2026 reservation season ended Nov 15. Check the park before you go.</div>';
+  $("p-detail").innerHTML='<div class="det"><button class="btn" id="back">← All trails</button><h2>'+esc(t.name)+'</h2><div class="sub">'+esc(t.area)+'</div><div style="margin-top:6px">'+badge(t)+'</div>'+alerts+
+   '<div class="big"><div><b>'+t.mi+'</b><span>miles</span></div><div><b>'+(t.gain?t.gain.toLocaleString():"—")+'</b><span>ft gain</span></div><div><b>'+esc(t.time)+'</b><span>time</span></div><div><b class="d-'+t.diff+'">'+t.diff+'</b><span>'+esc(t.type)+'</span></div></div>'+
+   (t.gain?'':'<div class="sub">Elevation gain '+esc(t.gainNote||"not published")+'.</div>')+'<div class="sub" id="thElev">'+(t.high?'High point '+t.high.toLocaleString()+' ft · ':'')+'Trailhead elevation …</div>'+
+   '<p>'+esc(t.desc)+'</p>'+
+   '<h4>Get to the trailhead</h4><div class="row"><a class="btn pri grow" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+t.lat+','+t.lng+'">Google Maps</a><a class="btn grow" target="_blank" rel="noopener" href="https://maps.apple.com/?daddr='+t.lat+','+t.lng+'">Apple Maps</a><button class="btn" id="cpy">Copy GPS</button></div>'+
+   '<div class="sub" style="margin-top:4px">'+t.lat.toFixed(5)+', '+t.lng.toFixed(5)+(t.approx?' (approximate lot location)':'')+'</div>'+
+   '<h4>'+(t.train?'🚆 Without a car':'🚌 Without a car')+'</h4><p>'+esc(t.transit)+'</p>'+(t.train?'<a class="btn" target="_blank" rel="noopener" href="https://new.mta.info/">MTA train times</a>':'')+
+   '<h4>🅿 Parking & fees</h4><p>'+esc(t.parking)+'</p>'+
+   '<h4>Tips</h4><ul style="margin:4px 0;padding-left:20px">'+t.tips.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul>'+
+   '<h4>Conditions</h4><div class="sub">Seen something on the trail? Ice, mud, a full lot, a closure. In the full app these go to everyone; in this demo they stay on your phone.</div>'+
+   '<textarea id="nTxt" rows="2" placeholder="e.g. Lot full by 9:30, icy on the upper section"></textarea><div class="row" style="margin-top:6px"><button class="btn grow" id="nAdd">Add report</button><button class="btn grow" id="tShare">Share this trail</button></div>'+
+   '<div id="nList">'+notes.map(n=>'<div class="note">'+esc(n.t)+'<div class="sub">'+new Date(n.d).toLocaleString()+'</div></div>').join("")+'</div>'+
+   '<h4>Sources (checked '+CHECKED+')</h4><div class="src">'+t.sources.map(s=>'<div><a target="_blank" rel="noopener" href="'+s[1]+'">'+esc(s[0])+'</a></div>').join("")+'</div></div>';
+  $("back").onclick=()=>{tab("explore");map.fitBounds(allB,{padding:[30,30]});};
+  $("cpy").onclick=async()=>{try{await navigator.clipboard.writeText(t.lat.toFixed(5)+", "+t.lng.toFixed(5));$("cpy").textContent="Copied";}catch(e){}};
+  $("nAdd").onclick=()=>{const v=$("nTxt").value.trim();if(!v)return;(S.notes[id]=S.notes[id]||[]).push({t:v.slice(0,300),d:Date.now()});save();openTrail(id);};
+  $("tShare").onclick=()=>shareUrl(t.name+" ("+t.mi+" mi, "+t.diff.toLowerCase()+")",location.origin+location.pathname+"#trail="+id);
+  const ev=await elevAt(t.lat,t.lng);const el=$("thElev");if(el)el.textContent=(t.high?'High point '+t.high.toLocaleString()+' ft · ':'')+(ev!=null?'Trailhead about '+fft(ev):'');
+}
+async function shareUrl(text,url){if(navigator.share){try{await navigator.share({title:"Upstate Trails",text,url});return;}catch(e){if(e&&e.name==="AbortError")return;}}try{await navigator.clipboard.writeText(text+" "+url);alertPill("Link copied");}catch(e){prompt("Copy this link",url);}}
+function alertPill(s){const p=$("pill"),o=p.textContent;p.textContent=s;setTimeout(()=>{if(p.textContent===s)p.textContent=o;},2500);}
+
+/* ---------- GPS & recording ---------- */
+let fix=null,me=null,acc=null,wid=null,follow=false,recLock=null;
+const recLine=L.polyline([],{color:"#ff8a3d",weight:5}).addTo(map),hikeLayer=L.layerGroup().addTo(map);
+function startGps(){if(wid!==null)return;wid=navigator.geolocation.watchPosition(p=>{fix={lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy};const ll=[fix.lat,fix.lng];
+  if(!me){me=L.marker(ll,{icon:L.divIcon({className:"",html:'<div class="me"></div>',iconSize:[24,24],iconAnchor:[12,12]}),interactive:false}).addTo(map);acc=L.circle(ll,{radius:fix.acc,color:"#2f8cff",weight:1,fillOpacity:.08,interactive:false}).addTo(map);}
+  else{me.setLatLng(ll);acc.setLatLng(ll).setRadius(fix.acc);}
+  if(follow)map.panTo(ll);onFix();},e=>{$("pill").textContent="GPS: "+e.message;},{enableHighAccuracy:true,maximumAge:2000,timeout:20000});}
+$("bLoc").onclick=()=>{startGps();follow=!follow;$("bLoc").classList.toggle("on",follow);if(follow&&fix)map.setView([fix.lat,fix.lng],Math.max(map.getZoom(),16));};
+map.on("dragstart",()=>{if(follow){follow=false;$("bLoc").classList.remove("on");}});
+function onFix(){const r=S.rec;if(r&&!r.paused){const p=[+fix.lat.toFixed(6),+fix.lng.toFixed(6)],last=r.pts[r.pts.length-1];if(!last||dist(last,p)>=Math.max(3,fix.acc*0.5)){r.pts.push(p);save();}}recUI();}
+function recUI(){const r=S.rec;$("pill").classList.toggle("rec",!!r&&!r.paused);
+  $("pill").textContent=r?(r.paused?"Paused · ":"● Recording · ")+fmi(lineLen(r.pts)):fix?"GPS ±"+Math.round(fix.acc*FT)+" ft":"GPS off";
+  $("rDist").textContent=fmi(r?lineLen(r.pts):0);$("rInfo").textContent=r?r.pts.length+" points · started "+new Date(r.t).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}):"Not recording";
+  $("rCtl").hidden=!r;$("bRec").hidden=!!r;$("bPause").textContent=r&&r.paused?"Resume":"Pause";recLine.setLatLngs(r?r.pts:[]);}
+$("bRec").onclick=async()=>{startGps();S.rec={t:Date.now(),pts:[],paused:false};save();recUI();try{recLock=await navigator.wakeLock.request("screen");}catch(e){}};
+$("bPause").onclick=()=>{S.rec.paused=!S.rec.paused;save();recUI();};
+$("bStop").onclick=async()=>{const r=S.rec;S.rec=null;if(recLock){recLock.release().catch(()=>{});recLock=null;}
+  if(r&&r.pts.length>=2){const name=prompt("Name this hike",new Date(r.t).toLocaleDateString()+" hike")||"My hike";S.hikes.push({id:Date.now(),name:name.slice(0,60),t:r.t,pts:r.pts});}save();recUI();tab("mine");};
+
+/* ---------- my hikes: profile, share link, GPX ---------- */
+async function profile(pts){const L0=lineLen(pts);if(L0<20)return null;const n=Math.min(80,Math.max(10,Math.round(L0/40)));const out=[];let acc0=0,i=1,seg=0;
+  const at=d=>{let s=0;for(let k=1;k<pts.length;k++){const l=dist(pts[k-1],pts[k]);if(s+l>=d){const f=l?(d-s)/l:0;return[pts[k-1][0]+(pts[k][0]-pts[k-1][0])*f,pts[k-1][1]+(pts[k][1]-pts[k-1][1])*f];}s+=l;}return pts[pts.length-1];};
+  for(let k=0;k<=n;k++){const d=L0*k/n,p=at(d),e=await elevAt(p[0],p[1]);if(e==null)return null;out.push([d,e]);}
+  let up=0,dn=0;for(let k=1;k<out.length;k++){const de=out[k][1]-out[k-1][1];if(de>0)up+=de;else dn-=de;}return{out,up,dn,L:L0};}
+function profSVG(pr){const W=300,H=70,es=pr.out.map(p=>p[1]),mn=Math.min(...es),mx=Math.max(...es)+1;const pts=pr.out.map(p=>(p[0]/pr.L*W).toFixed(1)+","+(H-4-(p[1]-mn)/(mx-mn)*(H-10)).toFixed(1)).join(" ");
+  return '<svg class="prof" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none"><polygon points="0,'+H+' '+pts+' '+W+','+H+'" fill="rgba(255,138,61,.25)"/><polyline points="'+pts+'" fill="none" stroke="#ff8a3d" stroke-width="2"/></svg>';}
+const B64="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+function encC(pts){let o="",pl=0,pg=0;const en=v=>{v=v<0?~(v<<1):v<<1;let s="";while(v>=32){s+=B64[32|(v&31)];v>>=5;}return s+B64[v];};pts.forEach(p=>{const a=Math.round(p[0]*1e5),b=Math.round(p[1]*1e5);o+=en(a-pl)+en(b-pg);pl=a;pg=b;});return o;}
+function decC(s){const pts=[];let i=0,a=0,b=0;const de=()=>{let r=0,sh=0,c;do{c=B64.indexOf(s[i++]);if(c<0)throw 0;r|=(c&31)<<sh;sh+=5;}while(c>=32&&i<=s.length);return r&1?~(r>>1):r>>1;};while(i<s.length){a+=de();b+=de();pts.push([a/1e5,b/1e5]);}return pts;}
+function simplify(pts,tol){if(pts.length<3)return pts;const k=Math.cos(pts[0][0]*Math.PI/180)*111320,xy=pts.map(p=>[p[1]*k,p[0]*111320]),keep=new Uint8Array(pts.length);keep[0]=keep[pts.length-1]=1;const st=[[0,pts.length-1]];
+  while(st.length){const[a,b]=st.pop();let md=0,mi=-1;const[ax,ay]=xy[a],[bx,by]=xy[b],dx=bx-ax,dy=by-ay,L0=Math.hypot(dx,dy)||1e-9;for(let i=a+1;i<b;i++){const d=Math.abs(dx*(ay-xy[i][1])-dy*(ax-xy[i][0]))/L0;if(d>md){md=d;mi=i;}}if(md>tol){keep[mi]=1;st.push([a,mi],[mi,b]);}}return pts.filter((p,i)=>keep[i]);}
+function hikeLink(h){let tol=2,p=simplify(h.pts,tol);while(encC(p).length>1500&&tol<20){tol*=1.5;p=simplify(h.pts,tol);}return location.origin+location.pathname+"#u="+encC(p)+"&n="+encodeURIComponent(h.name).replace(/%20/g,"+");}
+function gpx(h){return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Upstate Trails" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>'+esc(h.name)+'</name><trkseg>'+h.pts.map(p=>'<trkpt lat="'+p[0]+'" lon="'+p[1]+'"/>').join("")+'</trkseg></trk></gpx>\n';}
+function dl(name,text){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:"application/gpx+xml"}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),1500);}
+function mine(){const box=$("mine");hikeLayer.clearLayers();
+  if(!S.hikes.length){box.innerHTML='<p class="sub">No hikes yet. Use Record to track one, or open a hike link someone shared with you.</p>';return;}
+  box.innerHTML=S.hikes.slice().reverse().map(h=>'<div class="card" style="cursor:default" data-h="'+h.id+'"><h3>'+esc(h.name)+'</h3><div class="sub">'+(h.shared?'Shared with you · ':'')+new Date(h.t).toLocaleDateString()+' · '+fmi(lineLen(h.pts))+'</div><div class="ep sub">Elevation…</div><div class="row" style="margin-top:8px"><button class="btn" data-a="map">Show</button><button class="btn" data-a="share">Share</button><button class="btn" data-a="gpx">GPX</button><button class="btn" data-a="del">Delete</button></div></div>').join("");
+  S.hikes.forEach(h=>{L.polyline(h.pts,{color:"#33d6ff",weight:4}).addTo(hikeLayer);const ep=box.querySelector('[data-h="'+h.id+'"] .ep');profile(h.pts).then(pr=>{if(!ep)return;ep.innerHTML=pr?'↑ '+fft(pr.up)+' · ↓ '+fft(pr.dn)+profSVG(pr):'Elevation needs a connection';});});}
+$("mine").onclick=e=>{const b=e.target.closest("button[data-a]");if(!b)return;const id=+b.closest("[data-h]").dataset.h,h=S.hikes.find(x=>x.id===id);if(!h)return;const a=b.dataset.a;
+  if(a==="map"){map.fitBounds(L.latLngBounds(h.pts),{padding:[40,40]});$("sheet").classList.add("min");}
+  if(a==="share")shareUrl(h.name+" ("+fmi(lineLen(h.pts))+")",hikeLink(h));
+  if(a==="gpx")dl((h.name.replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"-")||"hike")+".gpx",gpx(h));
+  if(a==="del"){if(b.dataset.arm){S.hikes=S.hikes.filter(x=>x!==h);save();mine();}else{b.dataset.arm=1;b.textContent="Sure?";}}};
+
+/* ---------- open shared links ---------- */
+function fromHash(){const h=location.hash.slice(1);if(!h)return;const q=new URLSearchParams(h);
+  if(q.get("trail")){history.replaceState(null,"",location.pathname);setTimeout(()=>openTrail(q.get("trail")),300);return;}
+  if(q.get("u")){let pts;try{pts=decC(q.get("u"));}catch(e){return;}if(pts.length<2)return;const name=(q.get("n")||"Shared hike").slice(0,60);
+    if(!S.hikes.some(x=>x.name===name&&dist(x.pts[0],pts[0])<5))S.hikes.push({id:Date.now(),name,t:Date.now(),pts,shared:true});save();history.replaceState(null,"",location.pathname);tab("mine");setTimeout(()=>map.fitBounds(L.latLngBounds(pts),{padding:[40,40]}),400);}}
+fromHash();window.addEventListener("hashchange",fromHash);recUI();if(S.rec)startGps();
+
+/* ---------- full screen & install ---------- */
+const isApp=()=>matchMedia("(display-mode: fullscreen)").matches||matchMedia("(display-mode: standalone)").matches||navigator.standalone;
+const fsOn=()=>!!(document.fullscreenElement||document.webkitFullscreenElement);
+function goFull(){const el=document.documentElement,f=el.requestFullscreen||el.webkitRequestFullscreen;if(f&&!fsOn())try{const p=f.call(el,{navigationUI:"hide"});if(p&&p.catch)p.catch(()=>{});}catch(e){}}
+$("bFull").onclick=()=>{if(fsOn()){(document.exitFullscreen||document.webkitExitFullscreen).call(document);}else goFull();};
+$("bFull").hidden=isApp();document.addEventListener("fullscreenchange",()=>{$("bFull").classList.toggle("on",fsOn());setTimeout(()=>map.invalidateSize(),200);});
+let inst=null;if(!isApp())$("fsGate").hidden=false;
+$("fsGo").onclick=()=>{goFull();$("fsGate").hidden=true;};$("fsNo").onclick=()=>{$("fsGate").hidden=true;};
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();inst=e;$("fsInst").hidden=false;});
+$("fsInst").onclick=async()=>{if(!inst)return;inst.prompt();try{await inst.userChoice;}catch(_){}inst=null;$("fsInst").hidden=true;$("fsGate").hidden=true;};
+if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
+setTimeout(upd,0);
+</script></body></html>
